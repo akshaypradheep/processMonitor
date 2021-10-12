@@ -1,6 +1,5 @@
 #!/bin/bash
 source ~/.bashrc
-$source /home/pelatro/install/mViva/product/utilities/CheckProcessList.cfg
 source ./CheckProcessList.cfg
 SKDEF='\e[39m'
 SKBLK='\e[30m'
@@ -30,7 +29,6 @@ else
 CPU_USAGE=`sar -f $(date +/var/log/sa/sa%d) -u|tail -1|awk '{print $8"%"}'`
 MEMUSED=`free -m|tail -2|head -1|awk '{print $3}'`
 MEMTOTAL=`free -m|grep Mem:|awk '{print $2}'`
-#MEM=`echo "$MEMUSED/$MEMTOTAL*100"|bc -l|awk -F '.' '{print $1"%"}'`
 MEM=`echo "$MEMUSED,$MEMTOTAL,100" | awk -F"," '{printf("%.2f\n",$1/$2*$3)}'`
 echo -e "${SKBLU}\e[1;47m                                       `hostname`                                        \033[0m\n"
 echo -e "${SKDGR}\e[1;47m`printf "%32s [%8s] %25s [%8s]%25s" "CPU USAGE:" "$CPU_USAGE" "MEMORY USAGE:" "${MEM}%" `${SKDGR}${SKDEF}\e[0m"
