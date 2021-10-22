@@ -1,6 +1,6 @@
 #!/bin/bash
 source ~/.bashrc
-source ./CheckProcessList.cfg
+source /home/pelatro/install/mViva/product/utilities/CheckProcessList.cfg
 SKDEF='\e[39m'
 SKBLK='\e[30m'
 SKRED='\e[31m'
@@ -20,48 +20,57 @@ SKLCY='\e[96m'
 SKWHI='\e[97m'
 if [[ $1 == 'all' ]]
 then
-        echo -e "\n${SKMAG}\e[1;47m                                       Application Process Status                                        \033[0m\n"
+    echo -e "\n${SKMAG}\e[1;47m                                       Application Process Status                                        \033[0m\n"
 	for i in ${hosts//,/ };
 	do
 		`echo ssh  $i|sed s/:/' '/g`
 	done
 else
-CPU_USAGE=`sar -f $(date +/var/log/sa/sa%d) -u|tail -1|awk '{print $8"%"}'`
-MEMUSED=`free -m|tail -2|head -1|awk '{print $3}'`
-MEMTOTAL=`free -m|grep Mem:|awk '{print $2}'`
-MEM=`echo "$MEMUSED,$MEMTOTAL,100" | awk -F"," '{printf("%.2f\n",$1/$2*$3)}'`
-echo -e "${SKBLU}\e[1;47m                                       `hostname`                                        \033[0m\n"
-echo -e "${SKDGR}\e[1;47m`printf "%32s [%8s] %25s [%8s]%25s" "CPU USAGE:" "$CPU_USAGE" "MEMORY USAGE:" "${MEM}%" `${SKDGR}${SKDEF}\e[0m"
-
-echo -e "${SKMAG}`printf "%35s [%8s] [%8s] [%4s] [%10s] [%10s] [%6s]\n" "Process Name" "Instance" "PID" "CPU" "Alloc RAM" "Util RAM" "STATUS"`${SKMAG}${SKDEF}\e[0m"
-for i in ${APP_PROCESS//,/ }
-do
-
-grepString=`echo $i|awk -F ':' '{print $NF}'`
-displayString=`echo $i|awk -F ':' '{print $1}'`
-process_type=`echo $i|awk -F ':' '{print $2}'`
-status=`ps -ef | grep $PRODUCT_USER | grep -w "${grepString}" |grep -v grep`
-if [ $? -eq 1 ]
-then
- echo -e "${SKRED}`printf "%35s [%8s] [%8s]" "${displayString}" "N/A" "N/A"`${SKDEF} ${SKRED}`printf "[%4s] [%10s] [%10s] [%6s]\n" "N/A" "N/A" "N/A" "DEAD"`${SKRED}${SKDEF}\e[0m"
-else
-PIDS=`ps -ef|grep $PRODUCT_USER|grep -w ${grepString}|grep -v grep|awk '{print $2}'`
-instance=1
-for PID in $PIDS
-do
-alocated=`jstat -gc ${PID}|awk 'NR==2{print $7}' | cut -d"." -f1`
-utilized=`jstat -gc ${PID}|awk 'NR==2{print $8}' | cut -d"." -f1`
-cpu=`ps -aux|grep -w ${PID}|grep -v grep|awk '{print $3}'`
-
-if [ $alocated -le $utilized ]
-then
-echo -e "${SKBLU}`printf "%35s [%8s] [%8s]" "${displayString}" "$instance" "$PID"`${SKDEF} ${SKRED}`printf "[%4s] [%10s] [%10s] [%6s]\n" "$cpu" "$alocated" "$utilized" "ALERT"`${SKRED}${SKDEF}\e[0m"
-else
-echo -e "${SKBLU}`printf "%35s [%8s] [%8s]" "${displayString}" "$instance" "$PID"`${SKDEF} ${SKGRN}`printf "[%4s] [%10s] [%10s] [%6s]\n" "$cpu" "$alocated" "$utilized" "OK"`${SKGRN}${SKDEF}\e[0m"
+	CPU_USAGE=`sar -f $(date +/var/log/sa/sa%d) -u|tail -1|awk '{print $8"%"}'`
+	MEMUSED=`free -m|tail -2|head -1|awk '{print $3}'`
+	MEMTOTAL=`free -m|grep Mem:|awk '{print $2}'`
+	#MEM=`echo "$MEMUSED/$MEMTOTAL*100"|bc -l|awk -F '.' '{print $1"%"}'`
+	MEM=`echo "$MEMUSED,$MEMTOTAL,100" | awk -F"," '{printf("%.2f\n",$1/$2*$3)}'`
+	echo -e "${SKBLU}\e[1;47m                                       `hostname`                                        \033[0m\n"
+	echo -e "${SKDGR}\e[1;47m`printf "%32s [%8s] %25s [%8s]%25s" "CPU USAGE:" "$CPU_USAGE" "MEMORY USAGE:" "${MEM}%" `${SKDGR}${SKDEF}\e[0m"
+	
+	echo -e "${SKMAG}`printf "%35s [%8s] [%8s] [%4s] [%10s] [%10s] [%6s]\n" "Process Name" "Instance" "PID" "CPU" "Alloc RAM" "Util RAM" "STATUS"`${SKMAG}${SKDEF}\e[0m"
+	for i in ${APP_PROCESS//,/ }
+	do
+		
+		grepString=`echo $i|awk -F ":" '{if (NF==3) print $NF ;else if (NF ==2 && ($NF == "1" || $NF == "0")) print $1; else print $NF;}'`
+		displayString=`echo $i|awk -F ':' '{print $1}'`
+		process_type=`echo $i|awk -F ":" '{if (NF==3) print $2 ;else if (NF ==2 && ($NF == "1" || $NF == "0")) print $NF; else print "0";}'`
+		status=`ps -ef | grep $PRODUCT_USER | grep -w "${grepString}" |grep -v grep`
+		if [ $? -eq 1 ]
+		then
+			echo -e "${SKRED}`printf "%35s [%8s] [%8s]" "${displayString}" "N/A" "N/A"`${SKDEF} ${SKRED}`printf "[%4s] [%10s] [%10s] [%6s]\n" "N/A" "N/A" "N/A" "DEAD"`${SKRED}${SKDEF}\e[0m"
+		else
+			PIDS=`ps -ef|grep $PRODUCT_USER|grep -w ${grepString}|grep -v grep|awk '{print $2}'`
+			instance=1
+			for PID in $PIDS
+			do
+				cpu=`ps -aux|grep -w ${PID}|grep -v grep|awk '{print $3}'`
+				if [ $process_type -eq 0 ]
+				then
+					alocated=`jstat -gc ${PID}|awk 'NR==2{print $7}' | cut -d"." -f1`
+					utilized=`jstat -gc ${PID}|awk 'NR==2{print $8}' | cut -d"." -f1`
+					if [ $alocated -le $utilized ]
+					then
+						echo -e "${SKBLU}`printf "%35s [%8s] [%8s]" "${displayString}" "$instance" "$PID"`${SKDEF} ${SKRED}`printf "[%4s] [%10s] [%10s] [%6s]\n" "$cpu" "$alocated" "$utilized" "ALERT"`${SKRED}${SKDEF}\e[0m"
+					else
+						echo -e "${SKBLU}`printf "%35s [%8s] [%8s]" "${displayString}" "$instance" "$PID"`${SKDEF} ${SKGRN}`printf "[%4s] [%10s] [%10s] [%6s]\n" "$cpu" "$alocated" "$utilized" "OK"`${SKGRN}${SKDEF}\e[0m"
+					fi
+				else
+					alocated='N/A'
+					utilized='N/A'
+					echo -e "${SKBLU}`printf "%35s [%8s] [%8s]" "${displayString}" "$instance" "$PID"`${SKDEF} ${SKGRN}`printf "[%4s] [%10s] [%10s] [%6s]\n" "$cpu" "$alocated" "$utilized" "OK"`${SKGRN}${SKDEF}\e[0m"
+				fi
+				
+				instance=`echo $(($instance+1))`
+			done
+		fi
+	done
 fi
-instance=`echo $(($instance+1))`
-done
-fi
-done
-fi
+
 
