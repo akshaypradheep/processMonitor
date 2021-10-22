@@ -1,6 +1,6 @@
 #!/bin/bash
 source ~/.bashrc
-source /home/pelatro/install/mViva/product/utilities/CheckProcessList.cfg
+source ./CheckProcessList.cfg
 SKDEF='\e[39m'
 SKBLK='\e[30m'
 SKRED='\e[31m'
